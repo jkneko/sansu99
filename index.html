@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>九九クイズ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #fffce8, #f2f7ff 60%, #e4f2ff);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .app {
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 16px;
+      box-shadow: 0 12px 32px rgba(54, 77, 102, 0.2);
+      padding: 32px 40px;
+      max-width: 720px;
+      width: 100%;
+    }
+    h1 {
+      margin: 0 0 16px;
+      text-align: center;
+      font-size: 1.8rem;
+      letter-spacing: 0.08em;
+    }
+    #problems {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px 24px;
+      margin-bottom: 24px;
+    }
+    .problem {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      background: #f7faff;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      transition: transform 0.2s ease;
+    }
+    .problem.correct {
+      border-color: #40c057;
+      background: #e6f8eb;
+    }
+    .problem.incorrect {
+      border-color: #ff6b6b;
+      background: #ffecec;
+    }
+    .problem label {
+      font-size: 1.25rem;
+      min-width: 100px;
+    }
+    .problem input {
+      width: 110px;
+      padding: 10px 12px;
+      border: 2px solid #c5d1e0;
+      border-radius: 12px;
+      font-size: 1.4rem;
+      text-align: center;
+      height: 56px;
+      box-sizing: border-box;
+    }
+    .problem input::-webkit-outer-spin-button,
+    .problem input::-webkit-inner-spin-button {
+      margin: 0;
+      appearance: none;
+    }
+    .problem input[type="number"] {
+      appearance: textfield;
+    }
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 28px;
+      font-size: 1rem;
+      border-radius: 24px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, #4d9ef7, #7bc6ff);
+      color: white;
+      box-shadow: 0 10px 20px rgba(77, 158, 247, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 24px rgba(77, 158, 247, 0.4);
+    }
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 6px 12px rgba(77, 158, 247, 0.3);
+    }
+    #result {
+      text-align: center;
+      font-size: 1.3rem;
+      min-height: 1.4em;
+    }
+    .perfect {
+      position: relative;
+      animation: pop 0.75s ease-in-out;
+      color: #ff6b6b;
+      font-weight: bold;
+    }
+    .confetti {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+    .confetti span {
+      position: absolute;
+      width: 10px;
+      height: 16px;
+      background: var(--color);
+      top: -10vh;
+      animation: fall linear forwards;
+      transform: rotate(15deg);
+    }
+    @keyframes fall {
+      to {
+        transform: translateY(120vh) rotate(360deg);
+      }
+    }
+    @keyframes pop {
+      0% { transform: scale(0.6); opacity: 0; }
+      60% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+        display: block;
+      }
+      .app {
+        box-shadow: none;
+        border-radius: 0;
+        background: #ffffff;
+        padding: 32px 48px;
+        max-width: none;
+        width: auto;
+      }
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 24px;
+      }
+      #problems {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 48px;
+        row-gap: 36px;
+      }
+      .problem {
+        background: none;
+        border: none;
+        padding: 0;
+        gap: 16px;
+        align-items: flex-end;
+      }
+      .problem label {
+        font-size: 1.6rem;
+        min-width: 120px;
+        font-weight: 600;
+      }
+      .problem input {
+        border: 2.5px solid #000;
+        height: 64px;
+        font-size: 2rem;
+        width: 100%;
+        background: repeating-linear-gradient(180deg, transparent, transparent 27px, rgba(0,0,0,0.05) 27px, rgba(0,0,0,0.05) 54px);
+      }
+      .buttons,
+      #result,
+      .confetti {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>九九チャレンジ</h1>
+    <div id="problems" aria-live="polite"></div>
+    <div class="buttons">
+      <button id="grade">採点</button>
+      <button id="next">次へ</button>
+      <button id="print">印刷</button>
+    </div>
+    <div id="result"></div>
+  </div>
+  <div class="confetti" aria-hidden="true"></div>
+  <script>
+    const TOTAL_PROBLEMS = 10;
+    const problemsEl = document.getElementById('problems');
+    const resultEl = document.getElementById('result');
+    const confettiEl = document.querySelector('.confetti');
+
+    let currentProblems = [];
+
+    function shuffle(array) {
+      const result = array.slice();
+      for (let i = result.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+
+    function generateProblems() {
+      const allPairs = [];
+      for (let a = 1; a <= 9; a += 1) {
+        for (let b = 1; b <= 9; b += 1) {
+          allPairs.push({ a, b });
+        }
+      }
+
+      currentProblems = shuffle(allPairs).slice(0, TOTAL_PROBLEMS);
+    }
+
+    function renderProblems() {
+      problemsEl.innerHTML = '';
+      currentProblems.forEach((problem, index) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'problem';
+
+        const label = document.createElement('label');
+        label.textContent = `${problem.a} × ${problem.b} =`;
+        label.setAttribute('for', `answer-${index}`);
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.id = `answer-${index}`;
+        input.inputMode = 'numeric';
+        input.autocomplete = 'off';
+        input.dataset.answer = problem.a * problem.b;
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(input);
+        problemsEl.appendChild(wrapper);
+      });
+    }
+
+    function gradeProblems() {
+      let correctCount = 0;
+      const inputs = problemsEl.querySelectorAll('input');
+
+      inputs.forEach((input) => {
+        const expected = Number(input.dataset.answer);
+        const userAnswer = Number(input.value.trim());
+        const problem = input.parentElement;
+        problem.classList.remove('correct', 'incorrect');
+
+        if (input.value !== '' && userAnswer === expected) {
+          correctCount += 1;
+          problem.classList.add('correct');
+        } else {
+          problem.classList.add('incorrect');
+        }
+      });
+
+      const score = Math.round((correctCount / TOTAL_PROBLEMS) * 100);
+      showScore(score);
+    }
+
+    function showScore(score) {
+      resultEl.textContent = `${score}点`;
+      resultEl.classList.toggle('perfect', score === 100);
+
+      if (score === 100) {
+        launchConfetti();
+        resultEl.insertAdjacentText('beforeend', '！パーフェクト！');
+      } else {
+        clearConfetti();
+      }
+    }
+
+    function launchConfetti() {
+      clearConfetti();
+      const colors = ['#ff6b6b', '#fcc419', '#51cf66', '#339af0', '#845ef7'];
+      const fragment = document.createDocumentFragment();
+
+      for (let i = 0; i < 120; i += 1) {
+        const span = document.createElement('span');
+        const hue = colors[Math.floor(Math.random() * colors.length)];
+        const delay = Math.random() * 0.8;
+        const duration = 2.5 + Math.random() * 1.2;
+        span.style.left = `${Math.random() * 100}%`;
+        span.style.setProperty('--color', hue);
+        span.style.animationDuration = `${duration}s`;
+        span.style.animationDelay = `${delay}s`;
+        fragment.appendChild(span);
+      }
+
+      confettiEl.appendChild(fragment);
+
+      const confettiDuration = 4000;
+      setTimeout(clearConfetti, confettiDuration);
+    }
+
+    function clearConfetti() {
+      while (confettiEl.firstChild) {
+        confettiEl.removeChild(confettiEl.firstChild);
+      }
+    }
+
+    function resetQuiz() {
+      generateProblems();
+      renderProblems();
+      resultEl.textContent = '';
+      resultEl.classList.remove('perfect');
+      clearConfetti();
+    }
+
+    document.getElementById('grade').addEventListener('click', gradeProblems);
+    document.getElementById('next').addEventListener('click', resetQuiz);
+    document.getElementById('print').addEventListener('click', () => window.print());
+
+    resetQuiz();
+  </script>
+</body>
+</html>
